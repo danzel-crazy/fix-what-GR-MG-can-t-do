@@ -33,6 +33,10 @@ from copy import deepcopy
 import os
 # This is for using the locally installed repo clone when using slurm
 import matplotlib.pyplot as plt
+
+
+repo_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(repo_root))
 sys.path.insert(0, Path(__file__).absolute().parents[2].as_posix())
 from calvin_agent.evaluation.multistep_sequences import get_sequences
 from calvin_agent.evaluation.utils import (
@@ -50,7 +54,18 @@ from utils.utils import print_and_save
 from wrapper.model_wrapper import CustomModel
 from goal_gen.evaluate import IP2PEvaluation
     
+
+from PIL import Image
+from Grounding_DINO import object_detection
+import sys
+sys.path.append('/tmp2/young91319/GR-MG/GLIGEN')  
+from GLIGEN.gligen_inference_grmg import inpainting_image
+from GLIGEN.gligen_inference_grmg import inpainting_image_stage2
 logger = logging.getLogger(__name__)
+
+
+print(sys.path)
+
 EP_LEN = 360
 NUM_SEQUENCES = 1000
 SAVE_DIR = None
@@ -98,14 +113,19 @@ def evaluate_sequence(env, model, task_checker, initial_state, eval_sequence, va
     env.reset(robot_obs=robot_obs, scene_obs=scene_obs)
     success_counter = 0
     for subtask_i, subtask in enumerate(eval_sequence):
-        success = rollout(env, model, task_checker, subtask, val_annotations, subtask_i, sequence_i,ip2p_model)
-        if success:
-            success_counter += 1
-        else:
-            return success_counter
+        # modify
+        if subtask == "push_blue_block_right":
+            success = rollout(env, model, task_checker, subtask, val_annotations, subtask_i, sequence_i,ip2p_model)
+            if success:
+                success_counter += 1
+            else:
+                return success_counter
     return success_counter
 
-def rollout(env, model, task_oracle, subtask, val_annotations, subtask_i, sequence_i,ip2p_model):
+
+
+
+def rollout(env, model, task_oracle, subtask, val_annotations, subtask_i, sequence_i, ip2p_model):
     """Run the actual rollout on one subtask."""
     obs = env.get_obs()
     # get lang annotation for subtask
@@ -114,6 +134,22 @@ def rollout(env, model, task_oracle, subtask, val_annotations, subtask_i, sequen
     start_info = env.get_info()
     debug_image=[]
     progress=0
+    current_info = start_info
+    location = location_pre = [[0,0,0,0], [0,0,0,0]]
+    
+    if "blue" in lang_annotation:
+        target = "blue"
+    elif "red" in lang_annotation:
+        target = "red"
+    elif "pink" in lang_annotation:    
+        target = "pink"
+
+    if "right" in lang_annotation:
+        direction = 50
+    elif "left" in lang_annotation:
+        direction = -50
+
+    
     for i in range(EP_LEN):
         if i % 20 == 0:  # hardcode
             static_rgb = obs['rgb_obs']['rgb_static'] # (200, 200, 3)
@@ -121,7 +157,84 @@ def rollout(env, model, task_oracle, subtask, val_annotations, subtask_i, sequen
             image_patch=[static_rgb]
             text_patch=[lang_annotation + f".And {progress}% of the instruction has been finished."]
             print(text_patch)
-            goal_image=ip2p_model.inference(image_patch,text_patch)
+        
+            current_dir = Path(__file__).resolve().parent
+            save_path = f"{current_dir}/image/{sequence_i}-{subtask_i}-{lang_annotation}/static_rgb"
+            save_folder = Path(save_path)
+            if not save_folder.exists():
+                save_folder.mkdir(parents=True, exist_ok=True)
+            
+            numpy_array = np.uint8(static_rgb)
+            image = Image.fromarray(numpy_array)
+            static_rgb_resized = image.resize((512, 512), Image.Resampling.LANCZOS)
+            static_rgb_resized.save(f"{save_path}/{i}-{progress}.png")
+            temp = static_rgb_resized
+
+            image_detection, results = object_detection(temp, f"a white robot arm. a {target} object.")
+            print(results)
+
+            save_path = f"{current_dir}/image/{sequence_i}-{subtask_i}-{lang_annotation}/image_detection"
+            save_folder = Path(save_path)
+            if not save_folder.exists():
+                save_folder.mkdir(parents=True, exist_ok=True)
+            image_detection.save(f"{save_path}/{i}-{progress}.png")
+
+
+            for result in results:
+                labels = result['labels']
+                boxes = result['boxes']
+                
+                if "a white robot arm" in labels:
+                    # 找到索引并更新 location[0]
+                    index = labels.index("a white robot arm")
+                    location[0] = boxes[index].cpu().numpy().astype(int).tolist()
+                else:
+                    location[0] = location_pre[0]
+                    print("mo arm")
+                        
+                if f"a {target} object" in labels:
+                    # 找到索引并更新 location[0]
+                    index = labels.index(f"a {target} object")
+                    location[1] = boxes[index].cpu().numpy().astype(int).tolist()
+                else:
+                    location[1] = location_pre[1]
+                    print("mo target")
+            location_pre = location
+
+            print("location:")
+            print(location[0])
+            print(location[1])  
+            arm_image = static_rgb_resized.crop(location[0])
+            target_image = static_rgb_resized.crop(location[1])
+            static_rgb_resized.save("scene.png")
+            arm_image.save("arm.png")
+            target_image.save("target.png")
+
+            if current_info["robot_info"]["gripper_action"] == 1.0:
+                stage = 1
+                location[0][0] += (location[1][2] - location[0][2])
+                location[0][1] += (location[1][1] - location[0][3])
+                location[0][2] = location[1][2]
+                location[0][3] = location[1][1]
+                goal_image = inpainting_image("scene.png", location, "arm.png", "target.png", "a white robot arm and a blue block")
+            else:
+                stage = 2
+                location[0][0] += direction
+                location[0][2] += direction
+                goal_image = inpainting_image_stage2("scene.png", location[0], "arm.png",  "a white robot arm grasp a blue block")
+
+            # goal_image=ip2p_model.inference(image_patch,text_patch)
+            save_path = f"{current_dir}/image/{sequence_i}-{subtask_i}-{lang_annotation}/goal_image"
+            save_folder = Path(save_path)
+            if not save_folder.exists():
+                save_folder.mkdir(parents=True, exist_ok=True)
+            goal_image.save(f"{save_path}/{i}-{progress}.png")
+            
+            image_resized = goal_image.resize((256, 256))
+            image_rgb = image_resized.convert("RGB")
+            image_array = np.array(image_rgb)
+            goal_image = [image_array]
+
             temp_image=[static_rgb,goal_image[0],hand_rgb]
             debug_image.append(temp_image)
 
@@ -157,7 +270,7 @@ def rollout(env, model, task_oracle, subtask, val_annotations, subtask_i, sequen
 def main():
     seed_everything(0, workers=True)  # type:ignore
     parser = argparse.ArgumentParser(description="Evaluate a trained model on multistep sequences with language goals.")
-    parser.add_argument("--dataset_path", default='/mnt/bn/robotics/manipulation_data/calvin_data/task_ABC_D',
+    parser.add_argument("--dataset_path", default='/tmp2/young91319/GR-MG/calvin/dataset/calvin_debug_dataset',
                         type=str, help="Path to the dataset root directory.")  # modify it before opensource
     # evaluation
     parser.add_argument('--config_path', type=str, default="", help='path to the policy config file')
@@ -200,7 +313,7 @@ def main():
         'language': ['language']} 
     env = make_env(args.dataset_path, observation_space, device_id) 
     # Success rate and result files
-    flag="opensourcesd"
+    flag="blip2"
     sub_dir=f"{flag}_{epoch}_epoch"
     # set a global variable
     global SAVE_DIR
