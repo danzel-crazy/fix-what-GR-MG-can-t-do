@@ -1,8 +1,6 @@
-environment setup:
+## Checkpoints
+requirsed pretrained model:
 
-    required pretrained model:
-
-    ## Checkpoints
 [Goal Image Generation Model](https://lf-robot-opensource.bytetos.com/obj/lab-robot-public/gr_mg_release/goal_gen.ckpt)
 
     GR-MG/checkpoints/goal/goal_gen.ckpt 
