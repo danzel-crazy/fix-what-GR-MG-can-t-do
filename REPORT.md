@@ -19,7 +19,7 @@ how to run:
 
 ## prompt engineering
 ### modify prompt 
-look at blip_evaL_cml5.py
+    look at blip_evaL_cml5.py
 
 ### how to run:
- bash ./evaluate/blip2_eval.sh  ./policy/config/train.json
+    bash ./evaluate/blip2_eval.sh  ./policy/config/train.json
