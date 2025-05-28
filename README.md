@@ -5,7 +5,54 @@ GR-MG is a state-of-the-art robotics imitation learning model that has demonstra
 
 To address this limitation, we propose two enhancements to the original model pipeline:
 1. Image Inpainting
+<p align="center">
+  <img src="media/comparison.png" alt="Image Inpainting Example" width="600"/>
+  <br>
+  <em>Figure 1: Comparison between original method (left) and ours (right)</em>
+</p>
+
+<p align="center">
+  <img src="media/inpainting.png" alt="Image Inpainting Example" width="600"/>
+  <br>
+  <em>Figure 2: Example of Image Inpainting applied to generate goal-image with robot arm move toward blue block</em>
+</p>
 2. Text Prompt Modification
+
+### Enhancements to Text Prompt Engineering
+
+- **Original Agent Design**:
+  - Introduced a new token `[progress]` to provide percentage-based work process information for the goal image generation model.
+  - Progress token helps track task completion but may lack clarity for specific situations.
+
+- **Proposed Modifications**:
+  - Add relative position information between objects and the robot arm using the BLIP model.
+  - Example prompts:
+    - "Is white arm on the left of blue object?"
+    - "The arm is on the [direction] of the blue block."
+    - "Is white object on the blue object?"
+    - "Yes/No."
+
+- **Benefits of Modified Prompts**:
+  - Provides precise spatial information for generating accurate goal images.
+  - Improves task performance by leveraging relative position data.
+
+- **Progress Threshold Adjustment**:
+  - When progress exceeds 40%, the robot arm is close to grabbing the object.
+  - At this stage, additional prompts are unnecessary for goal image generation.
+  - This adjustment enhances performance compared to the original model design.
+
+#### Example of prompt and vqa 
+  ``` bash
+  Question: Is white arm on the left of pink object?
+  Answer: yes
+
+  Question: Is white object on the pink object?
+  Answer: no
+
+  Prompt: ['white arm on the left of pink object', 'white object not on the pink object']
+  VQA_Prompt: ['white arm on the left of pink object', 'white object not on the pink object']
+  Instruction: go push the pink block right. And 20% of the instruction has been finished. white arm on the left of pink object. white object not on the pink object.
+  ```
 
 Our experimental results show that these modifications yield modest improvements in tasks that previously showed suboptimal performance. Table 1. shows that only add prompt when progress in smaller than 0.4 has a good performance while Table 2. shows that adding position text prompt will aid the success rate of push object right
 
@@ -17,7 +64,7 @@ Our experimental results show that these modifications yield modest improvements
 #### Language Model
 - Proficiency in leveraging advanced language models for text generation, understanding, and prompt engineering.
 
-## Image Inpainting
+#### Image Inpainting
 - Grounding-DINO and GLIGEN
 
 ### Task Performance with Progress-Based Prompts
