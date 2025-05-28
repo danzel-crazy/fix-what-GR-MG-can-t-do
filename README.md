@@ -67,7 +67,7 @@ Our experimental results show that these modifications yield modest improvements
 #### Image Inpainting
 - Grounding-DINO and GLIGEN
 
-### Task Performance with Progress-Based Prompts
+## Task Performance with Progress-Based Prompts
 
 #### Table 1: Performance Comparison Based on Progress Levels
 | Task                   | Prompt with Full Progress | Prompt with Progress Under 40% |
