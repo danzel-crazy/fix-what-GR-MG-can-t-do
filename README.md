@@ -1,23 +1,42 @@
-<h1>GR-MG</h1>
+<h1>Fix what GR-MG can't do</h1>
 
-This repo contains code for the paper:
-### Leveraging Partially Annotated Data via Multi-Modal Goal Conditioned Policy
+## Introduction
+GR-MG is a state-of-the-art robotics imitation learning model that has demonstrated exceptional performance on the CALVIN benchmark. However, we identified a performance discrepancy in specific tasks, particularly in "pushing objects to right". 
 
-[Peiyan Li](https://github.com/LPY1219), [Hongtao Wu<sup>\*‡</sup>](https://scholar.google.com/citations?hl=zh-CN&user=7u0TYgIAAAAJ&view_op=list_works&sortby=pubdate), [Yan Huang<sup>\*</sup>](https://yanrockhuang.github.io/), [Chilam Cheang](https://github.com/bytedance/GR-MG/tree/main), [Liang Wang](https://scholar.google.com/citations?hl=zh-CN&user=8kzzUboAAAAJ&view_op=list_works&sortby=pubdate), [Tao Kong](https://www.taokong.org/)
+To address this limitation, we propose two enhancements to the original model pipeline:
+1. Image Inpainting
+2. Text Prompt Modification
 
-<sup>*</sup>Corresponding author   <sup>‡</sup> Project lead
+Our experimental results show that these modifications yield modest improvements in tasks that previously showed suboptimal performance. Table 1. shows that only add prompt when progress in smaller than 0.4 has a good performance while Table 2. shows that adding position text prompt will aid the success rate of push object right
 
-### [🌐 Project Website](https://gr-mg.github.io/) | [📄 Paper](https://arxiv.org/abs/2408.14368)
+## Related Field
+
+#### Visual Question Answering (VQA)
+- utilize pretrained-vqa model to capture image information by BLIP2
+
+#### Language Model
+- Proficiency in leveraging advanced language models for text generation, understanding, and prompt engineering.
+
+## Image Inpainting
+- Grounding-DINO and GLIGEN
+
+### Task Performance with Progress-Based Prompts
+
+#### Table 1: Performance Comparison Based on Progress Levels
+| Task                   | Prompt with Full Progress | Prompt with Progress Under 40% |
+|------------------------|---------------------------|---------------------------------|
+| Push pink block right  | 51.7%                     | 69.6%                           |
+| Push blue block right  | 47.8%                     | 65.5%                           |
+| Push red block right   | 41.4%                     | 65.5%                           |
+
+#### Table 2: Performance Comparison Between Original Model and Enhanced Model
+| Task                   | Original Model Performance | Enhanced Model with Prompt |
+|------------------------|----------------------------|----------------------------|
+| Push pink block right  | 69.4%                      | 69.6%                      |
+| Push blue block right  | 62.3%                      | 65.5%                      |
+| Push red block right   | 61.9%                      | 65.5%                      |
 
 
-<p align="center">
-  <img src="media/model.gif" alt="Model Gif" width="600"/>
-</p>
-
-
-## News
-- (🔥 New) **(2024.12.18)** Our paper was accepted by IEEE Robotics and Automation Letter (RA-L) !
-- (🔥 New) **(2024.08.27)** We have released the code and checkpoints of GR-MG !
 ## Preparation
 **Note:** We only test GR-MG with CUDA 12.1 and python 3.9
 
@@ -38,7 +57,11 @@ Download and unzip the [CALVIN](https://github.com/mees/calvin) dataset.
 ## Checkpoints
 - [Multi-modal Goal Conditioned Policy](https://lf-robot-opensource.bytetos.com/obj/lab-robot-public/gr_mg_release/epoch=47-step=83712.ckpt)
 - [Goal Image Generation Model](https://lf-robot-opensource.bytetos.com/obj/lab-robot-public/gr_mg_release/goal_gen.ckpt)
-
+- [diffusion pytorch model inpainting](https://huggingface.co/gligen/gligen-inpainting-text-image-box/resolve/main/diffusion_pytorch_model.bin)  
+```bash
+# path setting for inpainting checkpoint
+GR-MG/GLIGEN/diffusion_pytorch_model_inpainting.bin
+```
 
 ## Training
 
@@ -60,7 +83,15 @@ After pretraining, modify the pretrained_model_path in  `/policy/config/train.js
 # train multi-modal goal conditioned policy
 bash ./policy/main.sh  ./policy/config/train.json
 ```
-
+## prompt engineering
+### modify prompt 
+```bash
+    look at blip_evaL_cml5.py
+```
+### how to run:
+``` bash
+    bash ./evaluate/blip2_eval.sh  ./policy/config/train.json
+```
 
 ## Evaluation
 To evaluate our model on CALVIN, you can execute the following instruction:
@@ -71,11 +102,21 @@ bash ./evaluate/eval.sh  ./policy/config/train.json
 In the `eval.sh` script, you can specify which goal image generation model and policy to use. Additionally, we provide multi-GPU evaluation code, allowing you to evaluate different training epochs of the policy simultaneously.
 
 
-## Contact
-If you have any questions about the project, please contact peiyan.li@cripac.ia.ac.cn.
-
-
 ## Acknowledgements
+
+This repo contains code for the paper:
+### Leveraging Partially Annotated Data via Multi-Modal Goal Conditioned Policy
+
+[Peiyan Li](https://github.com/LPY1219), [Hongtao Wu<sup>\*‡</sup>](https://scholar.google.com/citations?hl=zh-CN&user=7u0TYgIAAAAJ&view_op=list_works&sortby=pubdate), [Yan Huang<sup>\*</sup>](https://yanrockhuang.github.io/), [Chilam Cheang](https://github.com/bytedance/GR-MG/tree/main), [Liang Wang](https://scholar.google.com/citations?hl=zh-CN&user=8kzzUboAAAAJ&view_op=list_works&sortby=pubdate), [Tao Kong](https://www.taokong.org/)
+
+<sup>*</sup>Corresponding author   <sup>‡</sup> Project lead
+
+### [🌐 Project Website](https://gr-mg.github.io/) | [📄 Paper](https://arxiv.org/abs/2408.14368)
+
+
+<p align="center">
+  <img src="media/model.gif" alt="Model Gif" width="600"/>
+</p>
 
 We thank the authors of the following projects for making their code and dataset open source:
 
