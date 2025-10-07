@@ -6,10 +6,16 @@
 - Real-world tests confirm robustness across diverse scenes
 
 ## Introduction
+This repository is the code of Final Project of Robot Perception and Learning - NTU.
+
+Fix what GR-Mg can't do, our final porject utilize progress design and image inpainting to help robotics model to acheive better perofromance on benchmark task 
+
+## Motivation 
 GR-MG is a state-of-the-art robotics imitation learning model that has demonstrated exceptional performance on the CALVIN benchmark. However, we identified a performance discrepancy in specific tasks, particularly in "pushing objects to right". 
 
+## Method
 To address this limitation, we propose two enhancements to the original model pipeline:
-1. Image Inpainting
+### 1. Image Inpainting
 <p align="center">
   <img src="media/comparison.png" alt="Image Inpainting Example" width="600"/>
   <br>
