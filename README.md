@@ -1,5 +1,10 @@
 <h1>Fix what GR-MG can't do</h1>
 
+## Motivation: Enable practical 3D image editing using pre-trained 2D models—so you can rotate any photo in 3D, no training needed.  
+**Key wins:**  
+- 3D-rotation consistency achieved using only 2D pre-trained networks  
+- Real-world tests confirm robustness across diverse scenes
+
 ## Introduction
 GR-MG is a state-of-the-art robotics imitation learning model that has demonstrated exceptional performance on the CALVIN benchmark. However, we identified a performance discrepancy in specific tasks, particularly in "pushing objects to right". 
 
@@ -16,7 +21,6 @@ To address this limitation, we propose two enhancements to the original model pi
   <br>
   <em>Figure 2: Example of Image Inpainting applied to generate goal-image with robot arm move toward blue block</em>
 </p>
-2. Text Prompt Modification
 
 ### Enhancements to Text Prompt Engineering
 
@@ -108,27 +112,6 @@ Download and unzip the [CALVIN](https://github.com/mees/calvin) dataset.
 ```bash
 # path setting for inpainting checkpoint
 GR-MG/GLIGEN/diffusion_pytorch_model_inpainting.bin
-```
-
-## Training
-
-### 1. Train Goal Image Generation Model
-```bash
-# modify the variables in the script before you execute the following instruction
-bash ./goal_gen/train_ip2p.sh  ./goal_gen/config/train.json
-```
-### 2. Pretrain Multi-modal Goal Conditioned Policy
-We use the method described in [GR-1](https://arxiv.org/abs/2312.13139) and pretrain our policy with Ego4D videos. You can download the pretrained model checkpoint [here](https://lf-robot-opensource.bytetos.com/obj/lab-robot-public/gr_mg_release/pretrained.pt). You can also pretrain the policy yourself using the scripts we provide. Before doing this, you'll need to download the [Ego4D](https://ego4d-data.org/) dataset.
-
-```bash
-# pretrain multi-modal goal conditioned policy
-bash ./policy/main.sh  ./policy/config/pretrain.json
-```
-### 3. Train Multi-modal Goal Conditioned Policy
-After pretraining, modify the pretrained_model_path in  `/policy/config/train.json` and execute the following instruction to train the policy.
-```bash
-# train multi-modal goal conditioned policy
-bash ./policy/main.sh  ./policy/config/train.json
 ```
 ## prompt engineering
 ### modify prompt 

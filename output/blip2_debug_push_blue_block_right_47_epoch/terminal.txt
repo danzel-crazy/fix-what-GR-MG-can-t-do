@@ -1,0 +1,38 @@
+success!
+Results for Epoch None:
+Average successful sequence length: 0.054
+Success rates for i instructions in a row:
+1: 5.4%
+2: 0.0%
+3: 0.0%
+4: 0.0%
+5: 0.0%
+push_blue_block_right: 16 / 23 |  SR: 69.6%
+push_pink_block_right: 19 / 29 |  SR: 65.5%
+push_red_block_right: 19 / 29 |  SR: 65.5%
+rotate_blue_block_right: 0 / 28 |  SR: 0.0%
+turn_off_led: 0 / 57 |  SR: 0.0%
+lift_pink_block_slider: 0 / 27 |  SR: 0.0%
+open_drawer: 0 / 121 |  SR: 0.0%
+push_blue_block_left: 0 / 35 |  SR: 0.0%
+push_red_block_left: 0 / 35 |  SR: 0.0%
+rotate_blue_block_left: 0 / 24 |  SR: 0.0%
+move_slider_left: 0 / 67 |  SR: 0.0%
+turn_on_led: 0 / 57 |  SR: 0.0%
+lift_red_block_slider: 0 / 30 |  SR: 0.0%
+turn_on_lightbulb: 0 / 43 |  SR: 0.0%
+move_slider_right: 0 / 93 |  SR: 0.0%
+rotate_pink_block_right: 0 / 31 |  SR: 0.0%
+lift_blue_block_slider: 0 / 35 |  SR: 0.0%
+turn_off_lightbulb: 0 / 36 |  SR: 0.0%
+lift_red_block_table: 0 / 30 |  SR: 0.0%
+lift_blue_block_table: 0 / 25 |  SR: 0.0%
+lift_pink_block_table: 0 / 31 |  SR: 0.0%
+rotate_pink_block_left: 0 / 23 |  SR: 0.0%
+rotate_red_block_right: 0 / 29 |  SR: 0.0%
+close_drawer: 0 / 46 |  SR: 0.0%
+push_pink_block_left: 0 / 31 |  SR: 0.0%
+rotate_red_block_left: 0 / 22 |  SR: 0.0%
+push_into_drawer: 0 / 17 |  SR: 0.0%
+
+Best model: epoch None with average sequences length of 0.054

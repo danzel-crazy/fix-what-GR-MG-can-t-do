@@ -33,6 +33,8 @@ from copy import deepcopy
 import os
 # This is for using the locally installed repo clone when using slurm
 import matplotlib.pyplot as plt
+from PIL import Image
+from lavis.models import load_model_and_preprocess
 
 repo_root = Path(__file__).resolve().parent.parent
 sys.path.append(str(repo_root))
@@ -60,6 +62,11 @@ EP_LEN = 360
 NUM_SEQUENCES = 1000
 SAVE_DIR = None
 FAIL_COUNTER=0
+
+#cuda device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+model_qa, vis_processors_qa, txt_processors = load_model_and_preprocess(name="blip_vqa", model_type="vqav2", is_eval=True, device=device)
 
 def make_env(dataset_path, observation_space, device_id):
     val_folder = Path(dataset_path) / "validation"
@@ -110,8 +117,20 @@ def evaluate_sequence(env, model, task_checker, initial_state, eval_sequence, va
             return success_counter
     return success_counter
 
+def blip_prompt(img, lang_annotation):
+    print(lang_annotation)
+    raw_image = Image.open(img).convert("RGB")
+    qa_image = vis_processors_qa["eval"](raw_image).unsqueeze(0).to(device)
+    question = "The task is "+ lang_annotation + "What sholud the white robot arm do next?" 
+    question = txt_processors["eval"](question)
+    caption_qa = model_qa.predict_answers(samples={"image": qa_image, "text_input": question}, inference_method="generate")
+    print(f"Ans: {caption_qa}")
+    return caption_qa[0]
+
 def rollout(env, model, task_oracle, subtask, val_annotations, subtask_i, sequence_i,ip2p_model):
     """Run the actual rollout on one subtask."""
+    """Add blip2 to give more information about image movement"""
+    
     obs = env.get_obs()
     # get lang annotation for subtask
     lang_annotation = val_annotations[subtask][0]
@@ -122,10 +141,18 @@ def rollout(env, model, task_oracle, subtask, val_annotations, subtask_i, sequen
     for i in range(EP_LEN):
         if i % 20 == 0:  # hardcode
             static_rgb = obs['rgb_obs']['rgb_static'] # (200, 200, 3)
+            print(static_rgb.shape)
+            #save static_rgb as image
+            img = Image.fromarray(static_rgb)
+            img.save(f"static_rgb_{sequence_i}_{subtask_i}.png")
+           
             hand_rgb = obs['rgb_obs']['rgb_gripper']
             image_patch=[static_rgb]
             text_patch=[lang_annotation + f".And {progress}% of the instruction has been finished."]
             print(text_patch)
+            text_prompt = blip_prompt(img, lang_annotation)
+            print(f'VQA_Prompt: {text_prompt}')
+            text_patch.append(text_prompt)
             goal_image=ip2p_model.inference(image_patch,text_patch)
             temp_image=[static_rgb,goal_image[0],hand_rgb]
             debug_image.append(temp_image)
@@ -215,6 +242,10 @@ def main():
     sr_path = os.path.join(SAVE_DIR, f"success_rate.txt")
     result_path = os.path.join(SAVE_DIR, f"results.json")
     ip2p_model=IP2PEvaluation(ip2p_ckpt_path)
+
+    # model_qa, vis_processors_qa, txt_processors = load_model_and_preprocess(name="blip_vqa", model_type="vqav2", is_eval=True, device=device)
+    print("Start evaluating policy...")
+
     evaluate_policy(
         model, 
         env,
